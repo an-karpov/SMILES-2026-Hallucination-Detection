@@ -15,6 +15,7 @@ import torch
 import torch.nn as nn
 from sklearn.metrics import f1_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 
 class HallucinationProbe(nn.Module):
@@ -25,11 +26,12 @@ class HallucinationProbe(nn.Module):
     built lazily in ``fit()`` once the feature dimension is known.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, n_components=256) -> None:
         super().__init__()
         self._net: nn.Sequential | None = None  # built lazily in fit()
         self._scaler = StandardScaler()
-        self._threshold: float = 0.5  # tuned by fit_hyperparameters()
+        self._pca = PCA(n_components=n_components) # Сжимаем до 128 главных компонент
+        self._threshold: float = 0.5
 
     # ------------------------------------------------------------------
     # STUDENT: Replace or extend the network definition below.
@@ -42,10 +44,19 @@ class HallucinationProbe(nn.Module):
         Args:
             input_dim: Feature vector dimensionality.
         """
+        # self._net = nn.Sequential(
+        #     nn.Linear(input_dim, 256),
+        #     nn.ReLU(),
+        #     nn.Linear(256, 1),
+        # )
+
         self._net = nn.Sequential(
-            nn.Linear(input_dim, 256),
+            nn.BatchNorm1d(input_dim),
+            nn.Linear(input_dim, 128),
             nn.ReLU(),
-            nn.Linear(256, 1),
+            nn.Dropout(0.2),
+            # nn.Linear(128, 1),
+            # nn.Sigmoid()
         )
 
     # ------------------------------------------------------------------
@@ -80,10 +91,16 @@ class HallucinationProbe(nn.Module):
             ``self`` (for method chaining).
         """
         X_scaled = self._scaler.fit_transform(X)
+        
+        if X_scaled.shape[1] > self._pca.n_components:
+            X_reduced = self._pca.fit_transform(X_scaled)
+        else:
+            self._pca = None
+            X_reduced = X_scaled
 
-        self._build_network(X_scaled.shape[1])
+        self._build_network(X_reduced.shape[1])
 
-        X_t = torch.from_numpy(X_scaled).float()
+        X_t = torch.from_numpy(X_reduced).float()
         y_t = torch.from_numpy(y.astype(np.float32))
 
         # Weight positive examples by neg/pos ratio to handle class imbalance.
@@ -170,6 +187,9 @@ class HallucinationProbe(nn.Module):
             Used to compute AUROC.
         """
         X_scaled = self._scaler.transform(X)
+        if X_scaled.shape[1] > self._pca.n_components:
+            X_scaled = self._pca.transform(X_scaled)
+
         X_t = torch.from_numpy(X_scaled).float()
         with torch.no_grad():
             logits = self(X_t)
