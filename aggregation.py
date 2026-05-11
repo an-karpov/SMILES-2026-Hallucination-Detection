@@ -27,7 +27,7 @@ def aggregate(
     
     real_positions = attention_mask.nonzero(as_tuple=False)
     if len(real_positions) == 0:
-        last_pos = -1
+        last_pos = 0
     else:
         last_pos = int(real_positions[-1].item())
 
