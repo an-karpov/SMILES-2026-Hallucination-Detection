@@ -56,7 +56,7 @@ class HallucinationProbe(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(128, 1),
-            # nn.Sigmoid()
+            nn.Sigmoid()
         )
 
     # ------------------------------------------------------------------
