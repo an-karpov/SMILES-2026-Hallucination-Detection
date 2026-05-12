@@ -13,6 +13,7 @@ This approach tackles LLM hallucination detection by analyzing the hidden states
 - Multi-Layer Activation Concatenation: I extract raw activation vectors from the late-middle layers ($19$ through $24$) specifically focusing on the last non-padded generated token, capturing the model's localized belief state just before producing the next word.
 
 Geometrical and Trajectory Probing: In addition to raw activations, I extract handcrafted statistical metrics of the hidden state dynamics across the layers. These include:
+    
     - Representation Drift: Relative $L_2$ norm changes (residual stream increments) and cross-layer Cosine Similarities to track state updates.
 
     - Distributional Characteristics: Layer-wise Kurtosis to capture activation sparsity and concentration, alongside raw $L_2$ norms to measure signal energy.
@@ -60,9 +61,9 @@ Geometric Features (extract_geometric_features): Calculates statistical properti
 ### `probe.py` (The Classifier):
 
 The architecture of Neural Network looks like this:
- - The input layer is $\to$ Hidden layer (128 neurons) $\to$SiLU$\to$Dropout(0.4)
+ - The input layer is $\to$ Hidden layer (128 neurons) $\to$ SiLU $\to$ Dropout(0.4)
  
- - Hidden layer (128) $\to$ Hidden layer (32 neurons) $\to$SiLU$\to$Dropout(0.2)
+ - Hidden layer (128) $\to$ Hidden layer (32 neurons) $\to$ SiLU $\to$ Dropout(0.2)
  
  - Hidden layer (32) $\to$ Output layer (1 logit)
  
